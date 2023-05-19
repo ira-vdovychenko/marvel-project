@@ -1,8 +1,7 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 
-import MarvelService from '../../services/MarvelService';
-
+import useMarvelService from '../../services/MarvelService';//змінили назву
 
 import Spinner from '../spinner/Spinner';
 import ErrorMessage from '../errorMessage/ErrorMessage';
@@ -11,78 +10,48 @@ import Skeleton from '../skeleton/Skeleton';
 import './charInfo.scss';
 
 
-class CharInfo extends Component {
+const CharInfo = (props) => {
 
-    state = {
-        char: null,
-        loading: false,
-        error: false
-    }
+    const [char, setChar] = useState(null);
+    // видалили стан loading, error і витягнули те шо треба з useMarvelService
+    const {loading, error, getCharacter, clearError} = useMarvelService();
 
-    marvelService = new MarvelService();
+    useEffect(() => {
+        updateChar()
+    }, [props.charId])
 
-    componentDidMount() {
-        this.updateChar();
-    }
 
-    componentDidUpdate(prevProps) {
-        if (this.props.charId !== prevProps.charId) {
-            this.updateChar();
-        }
-    }
-
-    updateChar = () => {
-        const {charId} = this.props;
+    const updateChar = () => {
+        const {charId} = props;
         if (!charId) {
             return;
         }
-
-        this.onCharLoading(); //щоб показувати спінер перед запитом
-        
-        this.marvelService
-            .getCharacter(charId)// коли прийде відповідь від сервера(1 обєкт з персонажем)
-            .then(this.onCharLoaded)//то він попаде в onCharLoaded і запишеться в стан
-            .catch(this.onError);
-            
+        clearError();
+        getCharacter(charId)// коли прийде відповідь від сервера(1 обєкт з персонажем)
+            .then(onCharLoaded)//то він попаде в onCharLoaded і запишеться в стан       
     }
 
-    onCharLoaded = (char) => {
-        this.setState({
-            char, 
-            loading: false
-        })
+    const onCharLoaded = (char) => {
+        setChar(char);
     }
 
-    onCharLoading = () => {
-        this.setState({
-            loading: true
-        })
-    }
 
-    onError = () => {
-        this.setState({
-            loading: false,
-            error: true
-        })
-    }
 
-    render() {
-        const {char, loading, error} = this.state;//витягнули компоненти
-
-        const skeleton = char || loading || error ? null : <Skeleton/>; //якщо в нас є щось з char, loading, error - то ми нічого не рендерим (null), якщо нічого - то skeleton(заглушка, поки не вибраний персонаж)
-        const errorMessage = error ? <ErrorMessage/> : null;
-        const spinner = loading ? <Spinner/> : null;
-        const content = !(loading || error || !char) ? <View char={char}/> : null;//коли не заглушка, не посилка, але є персонаж
-        return (
-            <div className="char__info">
-                {skeleton}
-                {errorMessage}
-                {spinner}
-                {content}
-            </div>
-        )
-    }
+  
+    const skeleton = char || loading || error ? null : <Skeleton/>; //якщо в нас є щось з char, loading, error - то ми нічого не рендерим (null), якщо нічого - то skeleton(заглушка, поки не вибраний персонаж)
+    const errorMessage = error ? <ErrorMessage/> : null;
+    const spinner = loading ? <Spinner/> : null;
+    const content = !(loading || error || !char) ? <View char={char}/> : null;//коли не заглушка, не посилка, але є персонаж
+    return (
+        <div className="char__info">
+            {skeleton}
+            {errorMessage}
+            {spinner}
+            {content}
+        </div>
+    )
 }
+
 
 const View = ({char}) => {
     const {name, description, thumbnail, homepage, wiki, comics} = char;
